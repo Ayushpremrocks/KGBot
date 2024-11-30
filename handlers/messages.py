@@ -1,7 +1,12 @@
 import requests
 from telegram import Update, MessageEntity
 from telegram.ext import CallbackContext
-from config import GEMINI_API_KEY
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Fetch the Gemini API key from .env
 
 
 async def handle_message(update: Update, context: CallbackContext):
