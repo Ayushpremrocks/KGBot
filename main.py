@@ -1,61 +1,54 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ChatMemberHandler
-from dotenv import load_dotenv
 import os
+from telegram.ext import Application
+from telegram.ext import CommandHandler
+from telegram.ext import MessageHandler
+from telegram.ext import filters
+from dotenv import load_dotenv
 from handlers.general import creator, contribute, about
-from handlers.userInfo import get_group_info, get_user_info
+from handlers.userInfo import get_group_info, get_my_info, get_user_info
 from handlers.admin import pin_message, delete_message, kick_user, ban_user, promote_user, demote_user, get_admins
 from handlers.moderation import warn_user, show_warnings, clear_warnings, mute_user, unmute_user
 from handlers.polls import create_poll
 from handlers.messages import handle_message
 from handlers.group_events import welcome_new_member, member_left
 
-# Load environment variables
 load_dotenv()
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # Fetch token from .env
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    # General command handlers #working
-    application.add_handler(CommandHandler("creator", creator))  # working
-    application.add_handler(CommandHandler("contribute", contribute))  # working
-    application.add_handler(CommandHandler("about", about))  # working
+    application.add_handler(CommandHandler("creator", creator))
+    application.add_handler(CommandHandler("contribute", contribute))
+    application.add_handler(CommandHandler("about", about))
 
-    # Admin command handlers
-    application.add_handler(CommandHandler("pin", pin_message))  # working
-    application.add_handler(CommandHandler("delete", delete_message))  # working
-    application.add_handler(CommandHandler("kick", kick_user))  # check implementation
-    application.add_handler(CommandHandler("ban", ban_user))  # check implementation
-    application.add_handler(CommandHandler("promote", promote_user))  # check implementation
-    application.add_handler(CommandHandler("demote", demote_user))  # check implementation
-    application.add_handler(CommandHandler("admins", get_admins))  # working
+    application.add_handler(CommandHandler("pin", pin_message))
+    application.add_handler(CommandHandler("delete", delete_message))
+    application.add_handler(CommandHandler("kick", kick_user))
+    application.add_handler(CommandHandler("ban", ban_user))
+    application.add_handler(CommandHandler("promote", promote_user))
+    application.add_handler(CommandHandler("demote", demote_user))
+    application.add_handler(CommandHandler("admins", get_admins))
 
-    # General message handler
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # working
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # User info commands
-    application.add_handler(CommandHandler("groupinfo", get_group_info))  # working
-    application.add_handler(CommandHandler("myinfo", get_user_info))  # check implementation
+    application.add_handler(CommandHandler("groupinfo", get_group_info))
+    application.add_handler(CommandHandler("myinfo", get_my_info))
+    application.add_handler(CommandHandler("userinfo", get_user_info))
 
-    # Moderation commands
-    application.add_handler(CommandHandler("warn", warn_user))  # check implementation
-    application.add_handler(CommandHandler("warnings", show_warnings))  # check implementation
-    application.add_handler(CommandHandler("clearwarnings", clear_warnings))  # check implementation
-    application.add_handler(CommandHandler("mute", mute_user))  # check implementation
-    application.add_handler(CommandHandler("unmute", unmute_user))  # check implementation
+    application.add_handler(CommandHandler("warn", warn_user))
+    application.add_handler(CommandHandler("warnings", show_warnings))
+    application.add_handler(CommandHandler("clearwarnings", clear_warnings))
+    application.add_handler(CommandHandler("mute", mute_user))
+    application.add_handler(CommandHandler("unmute", unmute_user))
 
-    # Poll command
-    application.add_handler(CommandHandler("poll", create_poll))  # check implementation
+    application.add_handler(CommandHandler("poll", create_poll))
 
-    # Group event handlers
-    application.add_handler(ChatMemberHandler(welcome_new_member, filters.StatusUpdate.NEW_CHAT_MEMBERS))  # check
-    application.add_handler(ChatMemberHandler(member_left, filters.StatusUpdate.LEFT_CHAT_MEMBER))  # check
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_new_member))
+    application.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, member_left))
 
-    # Run the bot
     print("Bot is running...")
     application.run_polling()
-
 
 if __name__ == "__main__":
     main()
