@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from dotenv import load_dotenv
 from flask import Flask, request
@@ -52,11 +53,9 @@ bot_app.add_handler(CommandHandler("poll", create_poll))
 bot_app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_new_member))
 bot_app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, member_left))
 
-
 @app.route("/")
 def home():
     return "KGbot is running on Vercel!"
-
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def webhook():
@@ -64,12 +63,16 @@ def webhook():
     bot_app.update_queue.put_nowait(update)
     return "OK", 200
 
+# Manually set webhook function (asynchronous)
+async def set_webhook():
+    await bot_app.bot.set_webhook(url=f"https://{VERCEL_URL}/{TELEGRAM_TOKEN}")
 
-# Set webhook when Flask starts
-@app.before_first_request
-def set_webhook():
-    bot_app.bot.set_webhook(url=f"https://{VERCEL_URL}/{TELEGRAM_TOKEN}")
+# Run set_webhook asynchronously
+def run_async_set_webhook():
+    asyncio.run(set_webhook())
 
+# Set webhook before running the Flask app
+run_async_set_webhook()
 
 if __name__ == "__main__":
     app.run(port=3000)
