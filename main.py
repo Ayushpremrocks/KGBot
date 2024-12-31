@@ -1,9 +1,9 @@
 import os
-import asyncio
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application
+from telegram.ext import CommandHandler
+from telegram.ext import MessageHandler
+from telegram.ext import filters
 from dotenv import load_dotenv
-from flask import Flask, request
-
 from handlers.general import creator, contribute, about
 from handlers.userInfo import get_group_info, get_my_info, get_user_info
 from handlers.admin import pin_message, delete_message, kick_user, ban_user, promote_user, demote_user, get_admins
@@ -12,67 +12,43 @@ from handlers.polls import create_poll
 from handlers.messages import handle_message
 from handlers.group_events import welcome_new_member, member_left
 
-# Load environment variables
 load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-VERCEL_URL = os.getenv("VERCEL_URL")  # Your Vercel deployment URL
 
-# Create Flask app
-app = Flask(__name__)
+def main():
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-# Create Telegram Application
-bot_app = Application.builder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(CommandHandler("creator", creator))
+    application.add_handler(CommandHandler("contribute", contribute))
+    application.add_handler(CommandHandler("about", about))
 
-# Add all handlers
-bot_app.add_handler(CommandHandler("creator", creator))
-bot_app.add_handler(CommandHandler("contribute", contribute))
-bot_app.add_handler(CommandHandler("about", about))
+    application.add_handler(CommandHandler("pin", pin_message))
+    application.add_handler(CommandHandler("delete", delete_message))
+    application.add_handler(CommandHandler("kick", kick_user))
+    application.add_handler(CommandHandler("ban", ban_user))
+    application.add_handler(CommandHandler("promote", promote_user))
+    application.add_handler(CommandHandler("demote", demote_user))
+    application.add_handler(CommandHandler("admins", get_admins))
 
-bot_app.add_handler(CommandHandler("pin", pin_message))
-bot_app.add_handler(CommandHandler("delete", delete_message))
-bot_app.add_handler(CommandHandler("kick", kick_user))
-bot_app.add_handler(CommandHandler("ban", ban_user))
-bot_app.add_handler(CommandHandler("promote", promote_user))
-bot_app.add_handler(CommandHandler("demote", demote_user))
-bot_app.add_handler(CommandHandler("admins", get_admins))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(CommandHandler("groupinfo", get_group_info))
+    application.add_handler(CommandHandler("myinfo", get_my_info))
+    application.add_handler(CommandHandler("userinfo", get_user_info))
 
-bot_app.add_handler(CommandHandler("groupinfo", get_group_info))
-bot_app.add_handler(CommandHandler("myinfo", get_my_info))
-bot_app.add_handler(CommandHandler("userinfo", get_user_info))
+    application.add_handler(CommandHandler("warn", warn_user))
+    application.add_handler(CommandHandler("warnings", show_warnings))
+    application.add_handler(CommandHandler("clearwarnings", clear_warnings))
+    application.add_handler(CommandHandler("mute", mute_user))
+    application.add_handler(CommandHandler("unmute", unmute_user))
 
-bot_app.add_handler(CommandHandler("warn", warn_user))
-bot_app.add_handler(CommandHandler("warnings", show_warnings))
-bot_app.add_handler(CommandHandler("clearwarnings", clear_warnings))
-bot_app.add_handler(CommandHandler("mute", mute_user))
-bot_app.add_handler(CommandHandler("unmute", unmute_user))
+    application.add_handler(CommandHandler("poll", create_poll))
 
-bot_app.add_handler(CommandHandler("poll", create_poll))
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_new_member))
+    application.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, member_left))
 
-bot_app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome_new_member))
-bot_app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, member_left))
-
-@app.route("/")
-def home():
-    return "KGbot is running on Vercel!"
-
-@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
-def webhook():
-    update = request.get_json()
-    bot_app.update_queue.put_nowait(update)
-    return "OK", 200
-
-# Manually set webhook function (asynchronous)
-async def set_webhook():
-    await bot_app.bot.set_webhook(url=f"https://{VERCEL_URL}/{TELEGRAM_TOKEN}")
-
-# Run set_webhook asynchronously
-def run_async_set_webhook():
-    asyncio.run(set_webhook())
-
-# Set webhook before running the Flask app
-run_async_set_webhook()
+    print("Bot is running...")
+    application.run_polling()
 
 if __name__ == "__main__":
-    app.run(port=3000)
+    main()
